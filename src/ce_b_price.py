@@ -35,7 +35,7 @@ def CDS_price_CEb(rec_rate, maturities, params_cir, params_gbm): #params_ce,
     s = maturities
     k, mu, r0, sigma_r = params_cir
     # a,b,c = params_ce
-    x_ratio, alpha, sigma_x = params_gbm #xl/x
+    x_ratio, alpha, sigma_x = params_gbm #x/xl
 
     d1 = lambda s : (np.log(x_ratio) + (alpha - 0.5 * sigma_x**2) * s
           ) / (sigma_x * np.sqrt(s))
@@ -122,7 +122,7 @@ def CEb_objective_fct(params_gbm, params_cir, rec_rate, market_prices, T):
         return np.inf
     else: 
         protection_leg, premium_leg, model_prices = CDS_price_CEb(rec_rate, T, params_cir, params_gbm)
-        return MAPE(model_prices, market_prices) 
+        return MAPE(market_prices, model_prices) 
     
 
 # Global optimization
@@ -155,13 +155,14 @@ def glob_CEb_calibration(params_cir, rec_rate, market_prices, T):
 
     return params
 
-def loc_CEb_calibration(params_cir, rec_rate, market_prices, T, initial_guess):#market_prices, T, initial_guess): 
+def loc_CEb_calibration(params_cir, rec_rate, market_prices, T, initial_guess): #market_prices, T, initial_guess): 
     
     #Local optimization for refinement
     res2 = optimize.minimize(CEb_objective_fct, 
                              initial_guess, 
                              method='Nelder-Mead', 
-                             args=(params_cir, rec_rate, market_prices, T) )
+                             args=(params_cir, rec_rate, market_prices, T))
+    
     x_ratio, alpha, sigma_x = res2.x
 
     params = pd.DataFrame(
