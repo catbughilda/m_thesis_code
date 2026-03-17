@@ -23,7 +23,7 @@ def CE_objective_fct(params, mkt_spread, maturities, params_cir):
     
     return MAPE(mod_spread, mkt_spread) 
 
-
+# TRIAL WITH 3 PARAMS ONLY, FIXING a = 0.02, b = 2, c = -1
 def glob_CE_calibration(mkt_spread, maturities, params_cir):
     bounds = [(0.00001, 1), 
                        (0.00001, 1), 

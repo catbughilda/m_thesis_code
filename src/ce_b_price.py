@@ -134,8 +134,8 @@ def glob_CEb_calibration(params_cir, rec_rate, market_prices, T):
     ranges = (
         slice(1.01, 5, complex(20)), #equivalent to np.linspace(a, b, N) 
         # I am placing an upper bound on 5 based off the results in the paper (<=4.5) how to choose otherwise? 
-        slice(0.01, 0.3, complex(20)), # alpha
-        slice(0.1, 0.5, complex(20)),) # sigma
+        slice(-0.3, 0.3, complex(20)), # alpha --> should also be possibly NEGATIVE
+        slice(0.01, 0.5, complex(20)),) # sigma
     # Global optimization
     res1 = optimize.brute(CEb_objective_fct, 
                           ranges=ranges, 
@@ -161,6 +161,7 @@ def loc_CEb_calibration(params_cir, rec_rate, market_prices, T, initial_guess): 
     res2 = optimize.minimize(CEb_objective_fct, 
                              initial_guess, 
                              method='Nelder-Mead', 
+                             bounds=((1.01, 5), (-0.3, 0.3), (0.01, 0.5)), #x_ratio, alpha, sigma_x must be positive
                              args=(params_cir, rec_rate, market_prices, T))
     
     x_ratio, alpha, sigma_x = res2.x
@@ -189,5 +190,5 @@ if __name__ == "__main__":
     #res = loc_CEb_calibration(params_cir, 0.4, price, t_grid, initial_guess)
     #res
     res = CEb_calibration(params_cir, 0.4, price, t_grid)
-    print(res) # FAR FROM TRUE SOL
+    print(res) 
 # %%

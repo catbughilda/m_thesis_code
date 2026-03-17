@@ -14,8 +14,6 @@ from src.cir_calibration import B_CIR
     
  #   with initial conditions D(0) = 0, C(0) = 0, B(s) given from the CIR model.
 
-# NOTICE: uses r0 ? SUS --> ASK PROF (!!!!!!!)
-
 #%%% Defining the system of ODEs --> y = [D(s), C(s)]
 
 def ode_system(s, y, params_ce, params_cir): # s = maturities, y = [D(0), C(0)]
@@ -24,10 +22,10 @@ def ode_system(s, y, params_ce, params_cir): # s = maturities, y = [D(0), C(0)]
     k, mu, r0, sigma_r = params_cir # CIR parameters 
 
     # diff equation for D(s)
-    D_s = (
+    D_s = ( #equation A14 in Cathcart El-Jahel 2006
         0.5 * sigma_r**2 * D**2
         + (sigma_r**2 * B_CIR(k,sigma_r,s) - k) * D
-        - b # b is unknown
+        - b # b is unknown 
     )
 
     # diff equation for C(s)
@@ -64,6 +62,10 @@ def solve_CD(s_grid, params_ce, params_cir, D0=0.0, C0=0.0): #initial conditions
     # but steps are taken using the fifth-order accurate formula (local extrapolation is done). 
     # A quartic interpolation polynomial is used for the dense output.
     # Can be applied in the complex domain. (source: docs.scipy.org)
+
+    #FROM CATHCART EL-JAHEL 2006: 
+    # Equation (A14) is of the Ricatti type, we solve it using the Runge–Kutta method with initial conditions D(0) = 0 and D'(0) = b.
+    # WHY b and not -b ?
 
     if not sol.success:
         raise RuntimeError("ODE solver failed: " + sol.message)

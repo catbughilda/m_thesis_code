@@ -3,21 +3,22 @@
 
 import numpy as np
 import os
-import matplotlib.pyplot as plt
+from dotenv import load_dotenv
 
-path = '/Users/linaatanasova/Documents/pycourse/qfi/thesis_code'
+load_dotenv()
+path = os.getenv('macbook_path')
 os.chdir(path)
 
+import matplotlib.pyplot as plt
 from src.cir_calibration import bond_price_CIR
 from src.num_routines_odes import solve_CD
-from trash.laplace import inv_laplace_CE, inv_laplace_CE_termstruct
+from src.laplace import inv_laplace_CE, inv_laplace_CE_termstruct
 import scipy.integrate as integrate
 import time
 
 # The computations suppose a notional of 1, t_0 = 0, and continuous compounding 
 
 #%%% E1 and E2 functions for CE model
-# should i specify the CE_params as params and unpack them inside the function? probably yes
 
 # Auxiliary functions for PREMIUM LEG
 def find_q(params_ce, params_cir): #params_ce are the parameters of the intensity rate
@@ -48,7 +49,6 @@ def find_E1_E2(s, params_ce, params_cir):
     E2_val = E2(params_ce, params_cir, s, q)
     return E1_val, E2_val
 '''
-# CHECK IF PREMIUM LEG FORMULA IS CORRECT ON PAPER ! ! ! !
 
 #%%% CDS pricing CE model
 # '''maturities = t_grid'''
@@ -70,7 +70,7 @@ def CDS_price_CE(rec_rate, maturities, params_cir, params_ce, params_gmb): # i'm
     print('Estimated C:', C) #check 
     print('Estimated D:', D)
     inv_lapl_protection = inv_laplace_CE_termstruct(maturities, params_gmb, params_ce)
-    protection_leg = ((1 - inv_lapl_protection * np.exp(C + D * r0)) #r0?
+    protection_leg = ((1 - inv_lapl_protection * np.exp(C + D * r0)) 
                       * (1 - rec_rate) * bond_price_CIR(k_opt,mu_opt,r0_opt,sigma_r_opt,maturities)
                       ) #time to maturity supposes t=0   # recovery rate delta = 0.4 assumed
 

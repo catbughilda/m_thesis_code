@@ -1,3 +1,4 @@
+#%% CIR Calibration
 import pandas as pd
 import numpy as np
 import math
@@ -141,4 +142,16 @@ if __name__ == "__main__":
     print("Local Optimization Parameters:")
     print(local_params)             
     CIR_plot(int_rate, global_params.values.flatten(), local_params.values.flatten())
+    '''
+    # A, B cir
+    a, b, r0, sigma = local_params.values.flatten()
+    s_grid = np.linspace(0, 10, 100)
+    A_values = A_CIR(a, b, sigma, s_grid)
+    B_values = B_CIR(a, sigma, s_grid)
+    plt.subplot(2, 1, 1)
+    plt.plot(s_grid, A_values, label="A(s)", linewidth=2)   
+    plt.subplot(2, 1, 2)
+    plt.plot(s_grid, B_values, label="B(s)", linewidth=2)
+    plt.xlabel("Maturity (s)")        
+    '''
 # %%
