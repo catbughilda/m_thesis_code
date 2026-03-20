@@ -49,7 +49,7 @@ def E1(params_ce, params_cir, s, q): #q in args to avoid computing it twice, s k
 def E2(params_ce, params_cir, s, q):
     a, b, c = params_ce # intensity rate parameters, c unused here
     k, mu, r0, sigma_r = params_cir 
-    numerator = -2 * (b + 1) * (1 - np.exp(-q * s))
+    numerator = -2 * (b + 1) * (1 - np.exp(-q * s)) # leads to -B(t)*rt in classical CIR
     denominator = 2 * q + (k - q) * (1 - np.exp(-q * s))
     return numerator / denominator
 
@@ -107,7 +107,7 @@ def CDS_price_CEa(rec_rate, maturities, params_cir, params_ce, params_gbm):
 #%%% Testing parameters setup
 # intensity rate parameters
 if __name__ == "__main__": 
-    ''' BASE CASE FROM CATHCART, EL-JAHEL 2006 (FIGURE 1) '''
+    #BASE CASE FROM CATHCART, EL-JAHEL 2006 (FIGURE 1) 
 
     a = 0.002 #starting value of intensity rate, increases spreads but not massively (a high, spread in 0 higher)
     b = 0.1 #increases spreads massively
@@ -124,8 +124,8 @@ if __name__ == "__main__":
     mu_opt = 0.09
     r0_opt = 0.04
     sigma_r_opt = 0.078
-
-    ''' BALLESTRA ET AL. 2020 PARAMS LOW RISK AVRG PARAMS '''
+    
+    # BALLESTRA ET AL. 2020 PARAMS LOW RISK AVRG PARAMS 
     a = -0.024 #starting value of intensity rate, increases spreads but not massively (a high, spread in 0 higher)
     b = 2.6 #increases spreads massively
     c = -0.032 # set to zero in CEa model
@@ -141,13 +141,13 @@ if __name__ == "__main__":
     mu_opt = 0.034
     r0_opt = 0.015
     sigma_r_opt = 0.031
-
+    
     ############ EXAMPLE ############
     params_ce = (a,b,c) #intensity rate parameters
     params_gbm = (x_ratio, alpha, sigma_x) #x_ratio instead of x0 bc it enters as ratio
     params_cir = (k_opt, mu_opt, r0_opt, sigma_r_opt)
 
-    t_grid = np.linspace(1, 10, 5)
+    t_grid = np.linspace(1, 10, 10)
     start = time.time()
     print("Time start:", start)
     #CDS_price_CE(0.4, t_grid, params_cir, params_ce, params_gbm)
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     end = time.time()
     print("Time elapsed:", end - start)
     plt.figure(figsize=(7, 4))
-    plt.plot(t_grid, spread*10000) #convert in bps
+    plt.plot(t_grid, spread/t_grid) #convert in bps
     plt.xlabel("t")
     plt.ylabel("spread")
     plt.title("Term structure")
@@ -179,7 +179,7 @@ def CEa_objective_fct(params_gbm, params_ce, params_cir, rec_rate, market_prices
     if x_ratio <= 1 or sigma_x <= 0: #must be positive values
         return np.inf
     else: 
-        protection_leg, premium_leg, model_prices = CDS_price_CEa(rec_rate, T, params_cir, params_ce, params_gbm)
+        protection_leg, premium_leg, model_prices = CDS_price_CEa(rec_rate, T, params_cir, params_ce, params_gbm) #i don't need the legs
         return MAPE(market_prices, model_prices) 
     
 
@@ -188,10 +188,10 @@ def glob_CEa_calibration(params_ce, params_cir, rec_rate, market_prices, T):
     NOTICE: 20^3 = 8000 evaluations for each maturity
     '''
     ranges = (
-        slice(1.01, 5, complex(20)), #equivalent to np.linspace(a, b, N) 
+        slice(1.01, 3.5, complex(20)), #equivalent to np.linspace(a, b, N) 
         # I am placing an upper bound on 5 based off the results in the paper (<=4.5) how to choose otherwise? 
         slice(-0.3, 0.3, complex(20)), # alpha --> should also be possibly NEGATIVE
-        slice(0.01, 0.5, complex(20)),) # sigma
+        slice(0.1, 0.5, complex(20)),) # sigma
     # Global optimization
     res1 = optimize.brute(CEa_objective_fct, 
                           ranges=ranges, 
@@ -203,24 +203,41 @@ def glob_CEa_calibration(params_ce, params_cir, rec_rate, market_prices, T):
     #a_opt_gl, b_opt_gl, r0_opt_gl, sigma_opt_gl = res1
 
     params = pd.DataFrame(
-        {"Global Optimization": [x_ratio, alpha, sigma_x]},
+        {"Brute Optimization": [x_ratio, alpha, sigma_x]},
         index=["x_ratio", "alpha", "sigma_x"])
     
-    #print("Global optimization results:")
-   # display(df_global)
+    # print("Global optimization results:")
+    # display(df_global)
 
     return params
 
 ########## AAAAA
 ###################### AAAAAAAAAA
 ######################################## AAAAAAAAAAAAAAA
+
+# Missing:
+# f DEPENDS on x (CRED QUAL VARIABLE) and T-t (TIME TO MATURITY)
+# f(x,0) = 1 if x/xl > 1, 0 otherwise
+# f(xl,T-t) = 0 valid for all maturities (tau=T-t) 
+# but here i am at time t0
+
+# g DEPENDS on r (INTEREST RATE) and T-t (TIME TO MATURITY)
+# If a,b,c also need to be estimated:
+# lambda = a + br + c/(x/xl) >=0 !!!!!! 
+# assumed by Cathcart and El-Jahel
+# g(r,0) = 1 for all r 
+# g(r,T-t) FINITE as r-->0 for all maturities
+# g(inf,T-t) = 0 for all maturities
+
+
 def loc_CEa_calibration(params_cir, rec_rate, market_prices, T, initial_guess): #market_prices, T, initial_guess): 
     
-    #Local optimization  -> CONSTRAINTS ARE IMPORTANT HERE
+    #Local optimization  
     res2 = optimize.minimize(CEa_objective_fct, 
                              initial_guess, 
-                             method='SLSQP', 
-                             bounds=((1.01, None), (None, None), (0.001, None)), 
+                             method='Nelder-Mead', 
+                             bounds=((1.01, None), (None, None), (0.1, None)), 
+                             #sigma cannot be too small or i incur into overflow (np.exp(large number)) 
                              args=(params_ce, params_cir, rec_rate, market_prices, T),
                              #constraints = 
                              )
@@ -238,7 +255,8 @@ def loc_CEa_calibration(params_cir, rec_rate, market_prices, T, initial_guess): 
     return params
 #%%
 if __name__ == "__main__":
-    res = CEa_calibration(params_ce, params_cir, 0.4, spread, t_grid)
+    res = glob_CEa_calibration(params_ce, params_cir, 0.4, spread, t_grid)
     loc_res = loc_CEa_calibration(params_cir, 0.4, spread, t_grid, res.values.flatten())
-    print(res, loc_res) 
+    print(res)
+    print(loc_res) 
 # %%

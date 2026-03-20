@@ -13,23 +13,45 @@ from src.helper import MAPE
 # Notice: in Ballestra et al. (2007) the parameters are a, b, sigma are called kappa, mu, sigma_r
 
 # Bond price CIR model
+'''
 def A_CIR(a,b,sigma,T):
         h = math.sqrt(a**2 + 2*sigma**2)
         numerator_A = 2*h*np.exp((a+h)*T/2)
         denominator_A = 2*h + (a+h)*(np.exp(h*T)-1)
         A = (numerator_A/denominator_A)**(2*a*b/sigma**2)
         return A
+'''
 
+def A_CIR(a,b,sigma,T):
+        h = math.sqrt(a**2 + 2*sigma**2)
+        numerator_A = 2*h*np.exp((a-h)*T/2)
+        denominator_A = 2*h + (a-h)*(1-np.exp(-h*T))
+        A = (2*a*b/sigma**2)*np.log(numerator_A/denominator_A)
+        return A
+'''
 def B_CIR(a,sigma,T): # needed also in CDS price fct 
         h = math.sqrt(a**2 + 2*sigma**2)
         B = 2*(np.exp(h*T)-1)/(2*h + (a+h)*(np.exp(h*T)-1))
         return B
+'''
 
+def B_CIR(a,sigma,T): # needed also in CDS price fct 
+        h = math.sqrt(a**2 + 2*sigma**2)
+        B = -2*(1-np.exp(-h*T))/(2*h + (a-h)*(1-np.exp(-h*T)))
+        return B
+
+'''
 def bond_price_CIR(a,b,r0,sigma,T): # supposing t=0, we only need maturity T
         A = A_CIR(a,b,sigma,T)
         B = B_CIR(a,sigma,T)
             
         return A * np.exp(-B*r0) # should be an np.array 
+'''
+def bond_price_CIR(a,b,r0,sigma,T): # supposing t=0, we only need maturity T
+        A = A_CIR(a,b,sigma,T)
+        B = B_CIR(a,sigma,T)
+            
+        return np.exp(A+B*r0) # should be an np.array 
 
 # CIR bjective function
 def CIR_objective_fct(params, market_prices, T):
@@ -142,16 +164,18 @@ if __name__ == "__main__":
     print("Local Optimization Parameters:")
     print(local_params)             
     CIR_plot(int_rate, global_params.values.flatten(), local_params.values.flatten())
-    '''
+    
     # A, B cir
     a, b, r0, sigma = local_params.values.flatten()
     s_grid = np.linspace(0, 10, 100)
     A_values = A_CIR(a, b, sigma, s_grid)
     B_values = B_CIR(a, sigma, s_grid)
     plt.subplot(2, 1, 1)
-    plt.plot(s_grid, A_values, label="A(s)", linewidth=2)   
+    plt.plot(s_grid, A_values, label="A(s)", linewidth=2)  
+    plt.title("Solution of A(s)") 
     plt.subplot(2, 1, 2)
-    plt.plot(s_grid, B_values, label="B(s)", linewidth=2)
+    plt.plot(s_grid, B_values, label="B(s)", color='orange', linewidth=2)
+    plt.title("Solution of B(s)")
     plt.xlabel("Maturity (s)")        
-    '''
+    
 # %%
