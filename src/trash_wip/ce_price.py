@@ -12,7 +12,7 @@ os.chdir(path)
 import matplotlib.pyplot as plt
 from src.cir_calibration import bond_price_CIR
 from src.num_routines_odes import solve_CD
-from src.laplace import inv_laplace_CE, inv_laplace_CE_termstruct
+from trash_wip.laplace import inv_laplace_CE, inv_laplace_CE_termstruct
 import scipy.integrate as integrate
 import time
 
@@ -97,8 +97,33 @@ def CDS_price_CE(rec_rate, maturities, params_cir, params_ce, params_gmb): # i'm
 #%%% Testing parameters setup
 # intensity rate parameters
 if __name__ == "__main__":
+
+    # BASE CASE FROM CATHCART, EL-JAHEL 2006 (FIGURE 1)
     start = time.time()
     print("Time start:", start)
+    a = 0.002
+    b = 0.1
+    c = 0.01 # set to zero in ce_b model so it is not used
+
+    # GBM parameters
+    x_ratio = 1.5 #x/xl --> under 1 = default 
+    alpha = 0.04
+    sigma_x = 0.02
+
+    # CIR parameters
+    k_opt = 0.5
+    mu_opt = 0.09
+    r0_opt = 0.04 
+    sigma_r_opt = 0.078
+
+    params_ce = (a,b,c) #intensity rate parameters
+    params_gbm = (x_ratio, alpha, sigma_x) #x_ratio instead of x0 bc it enters as ratio
+    params_cir = (k_opt, mu_opt, r0_opt, sigma_r_opt)
+
+    start = time.time()
+    print("Time start:", start)
+    
+    '''old params
     a = 0.02
     b = 2.6
     c = -0.03
@@ -117,7 +142,7 @@ if __name__ == "__main__":
     params_ce = (a,b,c) #intensity rate parameters
     params_gbm = (x_ratio, alpha, sigma_x) #x_ratio instead of x0 bc it enters as ratio
     params_cir = (k_opt, mu_opt, r0_opt, sigma_r_opt)
-
+    '''
     t_grid = np.linspace(1, 10, 5)
     #CDS_price_CE(0.4, t_grid, params_cir, params_ce, params_gbm)
     protection_leg, premium_leg, price  = CDS_price_CE(0.4, t_grid, params_cir, params_ce, params_gbm)

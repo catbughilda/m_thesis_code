@@ -1,18 +1,24 @@
 #%%
-import numpy as np
+
 import os
-import matplotlib.pyplot as plt
-path = '/Users/linaatanasova/Documents/pycourse/qfi/thesis_code'
+from dotenv import load_dotenv
+
+load_dotenv()
+path = os.getenv('macbook_path')
 os.chdir(path)
+
+import numpy as np
 from scipy.integrate import solve_ivp
 from src.cir_calibration import B_CIR
+import matplotlib.pyplot as plt
 
 # We need to solve the ODE system for D(s) and C(s):
 
  #   D'(s) = 0.5 * σ_r^2 * D(s)^2 + (σ_r^2  * B(s) - k) * D(s) - b
  #   C'(s) = k * μ * D(s) - a
     
- #   with initial conditions D(0) = 0, C(0) = 0, B(s) given from the CIR model.
+ #   with initial conditions D(0) = 0, C(0) = 0 --> D'(0) = -b, C'(0) = -a, but in paper they say D'(0) = b
+ #   B(s) from the CIR model.
 
 #%%% Defining the system of ODEs --> y = [D(s), C(s)]
 
@@ -47,7 +53,7 @@ def solve_CD(s_grid, params_ce, params_cir, D0=0.0, C0=0.0): #initial conditions
     D_vals : np.array --> D(s) values
     C_vals : np.array --> C(s) values
     """
-    y0 = [D0, C0]
+    y0 = (D0, C0) #tuple of initial conditions for D and C at s = 0
 
     sol = solve_ivp(
         ode_system, # the system of ODEs in one single fct
@@ -63,12 +69,9 @@ def solve_CD(s_grid, params_ce, params_cir, D0=0.0, C0=0.0): #initial conditions
     # A quartic interpolation polynomial is used for the dense output.
     # Can be applied in the complex domain. (source: docs.scipy.org)
 
-    #FROM CATHCART EL-JAHEL 2006: 
-    # Equation (A14) is of the Ricatti type, we solve it using the Runge–Kutta method with initial conditions D(0) = 0 and D'(0) = b.
+    # FROM CATHCART EL-JAHEL 2006: 
+    # Equation (A14) is of the Riccati type, we solve it using the Runge–Kutta method with initial conditions D(0) = 0 and D'(0) = b.
     # WHY b and not -b ?
-
-    if not sol.success:
-        raise RuntimeError("ODE solver failed: " + sol.message)
 
     D_vals = sol.y[0]
     C_vals = sol.y[1]
@@ -77,6 +80,26 @@ def solve_CD(s_grid, params_ce, params_cir, D0=0.0, C0=0.0): #initial conditions
 
 #%%% Example 
 if __name__ == "__main__":
+    a = 0.002
+    b = 0.1
+    c = 0.01 # set to zero in ce_b model so it is not used
+
+    # GBM parameters
+    x_ratio = 1.1 #x/xl --> under 1 = default 
+    alpha = 0.04
+    sigma_x = 0.02
+
+    # CIR parameters
+    k_opt = 0.5
+    mu_opt = 0.09
+    r0_opt = 0.04 
+    sigma_r_opt = 0.078
+
+    params_ce = (a,b,c) #intensity rate parameters
+    params_gbm = (x_ratio, alpha, sigma_x) #x_ratio instead of x0 bc it enters as ratio
+    params_cir = (k_opt, mu_opt, r0_opt, sigma_r_opt)
+
+    ''''old params
     sigma_r = 0.02       # volatility of r
     k = 0.30             # speed of mean reversion
     mu = 0.05            # long-term mean
@@ -86,6 +109,8 @@ if __name__ == "__main__":
 
     params_ce = (a, b, 0.0)  # c is unused here and rest of params are unused
     params_cir = (k, mu, r0, sigma_r)
+    '''
+
     # Example maturity grid
     s = np.linspace(0, 10, 100)
 

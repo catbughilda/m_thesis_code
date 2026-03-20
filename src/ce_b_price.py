@@ -87,7 +87,7 @@ if __name__ == "__main__":
     k_opt = 0.03
     mu_opt = 0.02
     r0_opt = 0.01
-    sigma_r_opt = 0.015
+    sigma_r_opt = 0.031
 
     params_ce = (a,b,c) #intensity rate parameters
     params_gbm = (x_ratio, alpha, sigma_x) #x_ratio instead of x0 bc it enters as ratio
@@ -155,6 +155,10 @@ def glob_CEb_calibration(params_cir, rec_rate, market_prices, T):
 
     return params
 
+# CONSTRAINTS ARE MISSING HERE, BOUNDS ARE REMOVABLE !!!!!!!!!!! 
+########## AAAAA
+###################### AAAAAAAAAA
+######################################## AAAAAAAAAAAAAAA
 def loc_CEb_calibration(params_cir, rec_rate, market_prices, T, initial_guess): #market_prices, T, initial_guess): 
     
     #Local optimization for refinement
